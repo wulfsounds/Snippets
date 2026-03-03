@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Animated Word Ticker by Wulfsounds</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="word-ticker-wrapper">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    #word-ticker-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.5rem;
+      color: #133261;
+    }
+
+    #ticker-static-text {
+      white-space: nowrap;
+      font-weight: 400;
+    }
+
+    #ticker-window {
+      display: inline-block;
+      overflow: hidden;
+      height: 1.2em;
+      vertical-align: middle;
+      position: relative;
+    }
+
+    #ticker-track {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .ticker-word {
+      display: block;
+      height: 1.2em;
+      line-height: 1.2em;
+      white-space: nowrap;
+      font-weight: 700;
+      color: #F2C347;
+      padding: 0 4px;
+    }
+  </style>
+
+  <span id="ticker-static-text">Top hospitals in:</span>
+
+  <span id="ticker-window">
+    <span id="ticker-track">
+      <!-- Words injected by JS -->
+    </span>
+  </span>
+
+  <!-- CITY ARRAY -->
+  <script>
+    (function () {
+      // NOTE: Update Array with additional cities here. To add an additional city, You must ADD A COMMA after the currently last city and add additional cities in "quotations." This pattern must be followed for the code to work properly.
+      const words = ["Greensboro, NC", "Greenville, NC", "Durham, NC", "Gastonia, NC", "Raleigh, NC", "Charlotte, NC", "Hickory, NC", "Statesville, NC", "Cary, NC"];
+      const track = document.getElementById('ticker-track');
+      const window_ = document.getElementById('ticker-window');
+
+      let current = 0;
+      let animating = false;
+
+      // Build word spans
+      words.forEach(function (word) {
+        const span = document.createElement('span');
+        span.className = 'ticker-word';
+        span.textContent = word;
+        track.appendChild(span);
+      });
+
+      // Set window width to widest word
+      function setWidth() {
+        const spans = track.querySelectorAll('.ticker-word');
+        let maxWidth = 0;
+        spans.forEach(function (s) { maxWidth = Math.max(maxWidth, s.offsetWidth); });
+        window_.style.width = maxWidth + 8 + 'px';
+      }
+      setWidth();
+
+      const wordHeight = parseFloat(getComputedStyle(track.querySelector('.ticker-word')).height);
+
+      // Cubic ease-in timing function via JS
+      function cubicEaseIn(t) {
+        return t * t * t;
+      }
+
+      function animateTo(fromY, toY, duration, callback) {
+        const start = performance.now();
+        function step(now) {
+          const elapsed = now - start;
+          const t = Math.min(elapsed / duration, 1);
+          const eased = cubicEaseIn(t);
+          const y = fromY + (toY - fromY) * eased;
+          track.style.transform = 'translateY(' + (-y) + 'px)';
+          if (t < 1) {
+            requestAnimationFrame(step);
+          } else {
+            track.style.transform = 'translateY(' + (-toY) + 'px)';
+            callback && callback();
+          }
+        }
+        requestAnimationFrame(step);
+      }
+
+      function nextWord() {
+        if (animating) return;
+        animating = true;
+
+        const fromY = current * wordHeight;
+        const next = (current + 1) % words.length;
+        const toY = next * wordHeight;
+
+        // If wrapping around, we slide to a clone-like effect by briefly resetting
+        if (next === 0) {
+          // Animate to one past the last item (duplicate first word at end)
+          const lastY = words.length * wordHeight;
+          animateTo(fromY, lastY, 600, function () {
+            // Snap back to top silently
+            track.style.transform = 'translateY(0px)';
+            current = 0;
+            animating = false;
+          });
+        } else {
+          animateTo(fromY, toY, 600, function () {
+            current = next;
+            animating = false;
+          });
+        }
+      }
+
+      // Append a duplicate of the first word for seamless loop
+      const clone = document.createElement('span');
+      clone.className = 'ticker-word';
+      clone.textContent = words[0];
+      track.appendChild(clone);
+
+      // Kick off rotation
+      setInterval(nextWord, 2200);
+    })();
+  </script>
+</div>
+  </body>
+</html>
